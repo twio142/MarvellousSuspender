@@ -76,10 +76,12 @@ a {
   text-decoration: underline;
 }
 /* dark theme for night lurkers */
-.dark {
-  background: #353535;
-  color: #b8b8b8;
-}
-.dark .group {
-  border-color: #555;
+@media (prefers-color-scheme: dark) {
+  .dark {
+    background: #353535;
+    color: #b8b8b8;
+  }
+  .dark .group {
+    border-color: #555;
+  }
 }

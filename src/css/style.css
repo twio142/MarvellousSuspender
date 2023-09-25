@@ -602,16 +602,17 @@ input[type='checkbox']:checked + label:before {
 
 
 /* dark theme */
-.dark, .dark .option, .dark .historyLink {
-    background: #353535;
-    color: #b8b8b8;
-}
+@media (prefers-color-scheme: dark) {
+    .dark, .dark .option, .dark .historyLink {
+        background: #353535;
+        color: #b8b8b8;
+    }
 
-.dark .tooltipIcon {
-    color: white;
-}
+    .dark .tooltipIcon {
+        color: white;
+    }
 
-.dark .btn {
-    background: #3477db;
+    .dark .btn {
+        background: #3477db;
+    }
 }
-

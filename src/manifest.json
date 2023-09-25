@@ -10,7 +10,6 @@
     "unlimitedStorage",
     "chrome://favicon/*",
     "contextMenus",
-    "cookies",
     "http://*/*",
     "https://*/*",
     "file://*/*"

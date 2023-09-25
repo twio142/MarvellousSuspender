@@ -39,6 +39,7 @@ var gsSuspendedTab = (function() {
     // Add event listeners
     setUnloadTabHandler(tabView.window, tab);
     setUnsuspendTabHandlers(tabView.document, tab);
+    buildHotKeys(tabView.document, tab);
 
     // Set imagePreview
     const previewMode = options[gsStorage.SCREEN_CAPTURE];
@@ -329,6 +330,80 @@ var gsSuspendedTab = (function() {
     _document.getElementById('suspendedMsg').onclick = unsuspendTabHandler;
   }
 
+  function dispatchMouseEvent(_document, varArgs) {
+    let e = _document.createEvent("MouseEvents");
+    e.initMouseEvent.apply(e, Array.prototype.slice.call(arguments, 1));
+    _document.getElementById('gsTopBar').dispatchEvent(e);
+  };
+
+  function buildHotKeys(_document, tab) {
+    _document.addEventListener('keydown', function(e) {
+      switch (e.key) {
+        case ' ':
+          showUnsuspendAnimation(_document);
+          tgs.unsuspendTab(tab);
+          break;
+        case 'j':
+          goToTab(true);
+          break;
+        case 'l':
+          goToTab();
+          break;
+        case 'w':
+          closeTab();
+          break;
+        case 't':
+          newTab();
+          break;
+        case 'y':
+          copyUrl(_document);
+          break;
+        case 'Y':
+          copyUrl(_document, true);
+          break;
+      }
+    });
+  }
+
+  function newTab() {
+    chrome.tabs.create({});
+  }
+
+  function closeTab() {
+    chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
+      chrome.tabs.remove(tabs[0].id);
+    })
+  }
+
+  function goToTab(prev=false) {
+    chrome.tabs.query({ currentWindow: true }, function (tabs) {
+      if (tabs.length == 1) return;
+      let activeIndex = tabs.findIndex(tab => tab.active);
+      let targetIndex = prev ?
+        ((activeIndex == 0 ? tabs.length : activeIndex) - 1) :
+        (activeIndex + 1) % tabs.length;
+      chrome.tabs.update(tabs[targetIndex].id, { active: true });
+    });
+  }
+
+  function copyUrl(_document, markdown=false) {
+    chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
+      let url = tabs[0].url.match(/&uri=(.+)/)[1];
+      url = markdown ? `[${decodeURIComponent(tabs[0].url.match(/#ttl=([^&]+)/)[1])}](${url})` : url;
+      let input = document.createElement('input');
+      input.style.position = 'fixed';
+      input.style.opacity = 0;
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('Copy');
+      document.body.removeChild(input);
+      _document.querySelector('.urlCopied').textContent = markdown ? 'Markdown link copied!' : 'URL copied!';
+      _document.querySelector('.urlCopied').style.display = 'block';
+      setTimeout(() => _document.querySelector('.urlCopied').style.display = 'none', 1500);
+    })
+  }
+
   function buildUnsuspendTabHandler(_document, tab) {
     return function(e) {
       e.preventDefault();
@@ -387,5 +462,6 @@ var gsSuspendedTab = (function() {
     updateCommand,
     updateTheme,
     updatePreviewMode,
+    dispatchMouseEvent,
   };
 })();

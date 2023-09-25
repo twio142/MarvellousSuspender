@@ -896,6 +896,9 @@ var tgs = (function() {
     for (const windowId of Object.keys(_currentFocusedTabIdByWindowId)) {
       if (_currentFocusedTabIdByWindowId[windowId] === oldTabId) {
         _currentFocusedTabIdByWindowId[windowId] = newTabId;
+        const suspendedView = getInternalViewByTabId(newTabId);
+        if (suspendedView)
+          gsSuspendedTab.dispatchMouseEvent(suspendedView.document, 'click', true, true)
       }
     }
     for (const windowId of Object.keys(_currentStationaryTabIdByWindowId)) {
@@ -992,7 +995,7 @@ var tgs = (function() {
     _currentFocusedTabIdByWindowId[windowId] = tabId;
 
     // If the tab focused before this was the keyboard shortcuts page, then update hotkeys on suspended pages
-    if (_triggerHotkeyUpdate) {
+    /* if (_triggerHotkeyUpdate) {
       const oldHotkey = _suspensionToggleHotkey;
       _suspensionToggleHotkey = await buildSuspensionToggleHotkey();
       if (oldHotkey !== _suspensionToggleHotkey) {
@@ -1002,7 +1005,7 @@ var tgs = (function() {
         }
       }
       _triggerHotkeyUpdate = false;
-    }
+    } */
 
     gsTabDiscardManager.unqueueTabForDiscard(focusedTab);
 
@@ -1021,6 +1024,10 @@ var tgs = (function() {
         focusedTab.id,
         'Content script status: ' + contentScriptStatus,
       );
+    } else if (gsUtils.isSuspendedTab(focusedTab, true)) {
+      const suspendedView = getInternalViewByTabId(tabId);
+      if (suspendedView)
+        gsSuspendedTab.dispatchMouseEvent(suspendedView.document, 'click', true, true)
     }
 
     //update icon
@@ -1154,13 +1161,18 @@ var tgs = (function() {
       gsTabCheckManager.queueTabCheck(focusedTab, { refetchTab: false }, 0);
     }
 
+    // gsMessages.executeCodeOnTab(focusedTab.id, `document.querySelector('body').focus()`, error => {console.log(error.message)})
+    const suspendedView = getInternalViewByTabId(focusedTab.id);
+    if (suspendedView)
+      gsSuspendedTab.dispatchMouseEvent(suspendedView.document, 'click', true, true)
+
     //check for auto-unsuspend
     var autoUnsuspend = gsStorage.getOption(gsStorage.UNSUSPEND_ON_FOCUS);
     if (autoUnsuspend) {
       if (navigator.onLine) {
         unsuspendTab(focusedTab);
       } else {
-        const suspendedView = getInternalViewByTabId(focusedTab.id);
+        // const suspendedView = getInternalViewByTabId(focusedTab.id);
         if (suspendedView) {
           gsSuspendedTab.showNoConnectivityMessage(suspendedView);
         }
@@ -1540,6 +1552,54 @@ var tgs = (function() {
           unsuspendAllTabsInAllWindows();
           break;
       }
+    });
+    chrome.runtime.onMessageExternal.addListener(
+      // React to Vimium & 标签分组扩展
+      function(request, sender, sendResponse) {
+        if (! ["okleolppfpgldndppihpddkbbipgdocp", "nplimhmoanghlebhdiboeellhgmgommi"].includes(sender.id))
+          return;
+        switch(request.name) {
+          case 'suspend-tab':
+            chrome.tabs.get(request.tabId, function(tab) {
+              if (! gsUtils.isSuspendedTab(tab)) {
+                gsTabSuspendManager.queueTabForSuspension(tab, 1);
+              }
+            });
+            break;
+          case 'toggle-suspend-tab':
+            chrome.tabs.get(request.tabId, function(tab) {
+              if (gsUtils.isSuspendedTab(tab)) {
+                unsuspendTab(tab);
+              } else {
+                gsTabSuspendManager.queueTabForSuspension(tab, 1);
+              }
+            });
+            break;
+          case 'suspend-group':
+            chrome.tabs.query({groupId: request.groupId}, function(tabs) {
+              for (let tab of tabs) {
+                if (! gsUtils.isSuspendedTab(tab)) {
+                  gsTabSuspendManager.queueTabForSuspension(tab, 1);
+                }
+              }
+            });
+            break;
+          case 'unsuspend-group':
+            chrome.tabs.query({groupId: request.groupId}, function(tabs) {
+              for (let tab of tabs) {
+                if (gsUtils.isSuspendedTab(tab)) {
+                  unsuspendTab(tab);
+                }
+              }
+            });
+            break;
+          case 'suspend-active-window':
+            suspendAllTabs(false);
+            break;
+          case 'unsuspend-active-window':
+            unsuspendAllTabs();
+            break;
+        }
     });
   }
 

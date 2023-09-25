@@ -568,26 +568,26 @@ var gsIndexedDb = {
           gsIndexedDb.setOption(gsIndexedDb.SCREEN_CAPTURE, '0');
         }
       }
-      if (major < 6 || (major === 6 && minor < 31) || testMode) {
-        // if (oldVersion < 6.31)
-        const cookies = await gsChrome.cookiesGetAll();
-        const scrollPosByTabId = {};
-        for (const cookie of cookies) {
-          if (cookie.name.indexOf('gsScrollPos') === 0) {
-            if (cookie.value && cookie.value !== '0') {
-              const tabId = cookie.name.substr(12);
-              scrollPosByTabId[tabId] = cookie.value;
-            }
-            let prefix = cookie.secure ? 'https://' : 'http://';
-            if (cookie.domain.charAt(0) === '.') {
-              prefix += 'www';
-            }
-            const url = prefix + cookie.domain + cookie.path;
-            await gsChrome.cookiesRemove(url, cookie.name);
-          }
-        }
-        tgs.scrollPosByTabId = scrollPosByTabId;
-      }
+      // if (major < 6 || (major === 6 && minor < 31) || testMode) {
+      //   // if (oldVersion < 6.31)
+      //   const cookies = await gsChrome.cookiesGetAll();
+      //   const scrollPosByTabId = {};
+      //   for (const cookie of cookies) {
+      //     if (cookie.name.indexOf('gsScrollPos') === 0) {
+      //       if (cookie.value && cookie.value !== '0') {
+      //         const tabId = cookie.name.substr(12);
+      //         scrollPosByTabId[tabId] = cookie.value;
+      //       }
+      //       let prefix = cookie.secure ? 'https://' : 'http://';
+      //       if (cookie.domain.charAt(0) === '.') {
+      //         prefix += 'www';
+      //       }
+      //       const url = prefix + cookie.domain + cookie.path;
+      //       await gsChrome.cookiesRemove(url, cookie.name);
+      //     }
+      //   }
+      //   tgs.scrollPosByTabId = scrollPosByTabId;
+      // }
     } catch (e) {
       gsUtils.error('gsIndexedDb', e);
     }
